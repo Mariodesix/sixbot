@@ -1,6 +1,7 @@
-require('dotenv').config();  // Carica le variabili d'ambiente dal file .env
-
-const { Client, GatewayIntentBits } = require('discord.js');
+import 'dotenv/config';
+import { Client, GatewayIntentBits } from 'discord.js';
+import ordinaTicket from './ordinaTicket.js';
+import recensioneTicket from './recensioneTicket.js';
 
 const client = new Client({
     intents: [
@@ -11,16 +12,13 @@ const client = new Client({
     ]
 });
 
-// Importa e avvia la logica dei ticket, passando il client
-require('./ordinaTicket.js')(client);
-require('./recensioneTicket.js')(client);
+ordinaTicket(client);
+recensioneTicket(client);
 
-// Variabili d'ambiente
 const token = process.env.TOKEN;
 
 client.once('ready', () => {
     console.log(`✅ Bot attivo come ${client.user.tag}`);
 });
 
-// Login al bot
 client.login(token);

@@ -1,14 +1,20 @@
-const { Events, PermissionsBitField, MessageFlags, EmbedBuilder, ButtonBuilder, ActionRowBuilder, ModalBuilder, TextInputBuilder, TextInputStyle } = require('discord.js');
+import {
+    Events,
+    PermissionsBitField,
+    MessageFlags,
+    EmbedBuilder,
+    ButtonBuilder,
+    ActionRowBuilder,
+    ModalBuilder,
+    TextInputBuilder,
+    TextInputStyle
+} from 'discord.js';
 
-// Accedi alla variabile d'ambiente per l'ID del canale di log
 const logRecensioneChannelId = process.env.LOG_RECENSIONE_CHANNEL_ID;
 
-// Esporta una funzione che riceve il client
-module.exports = (client) => {
-    // Gestione del comando '!inviar' per recensioni
+export default (client) => {
     client.on(Events.MessageCreate, async (message) => {
         if (message.content === '!inviar') {
-            // Controlla se l'utente ha i permessi di amministratore
             if (!message.member.permissions.has(PermissionsBitField.Flags.Administrator)) {
                 return message.reply("❌ Non hai il permesso di usare questo comando.");
             }
@@ -19,9 +25,9 @@ module.exports = (client) => {
 
             if (existingMessage) {
                 try {
-                    await message.author.send("⚠️ Il messaggio per inviare una recensione è già presente in questo canale.");
-                } catch (error) {
-                    message.reply("⚠️ Il messaggio per inviare una recensione è già presente in questo canale. (DM disabilitati)");
+                    await message.author.send("⚠️ Il messaggio per inviare una recensione è già presente.");
+                } catch {
+                    message.reply("⚠️ Il messaggio è già presente. (DM disabilitati)");
                 }
                 return;
             }
@@ -31,43 +37,21 @@ module.exports = (client) => {
                 .setDescription("Clicca sul pulsante qui sotto per lasciare la tua recensione.")
                 .setColor(0x3498db);
 
-            const openRecensioneButton = new ButtonBuilder()
-                .setCustomId('open_recensione')
-                .setLabel('Lascia una recensione')
-                .setStyle('Primary');
-
+            const openRecensioneButton = new ButtonBuilder().setCustomId('open_recensione').setLabel('Lascia una recensione').setStyle('Primary');
             const actionRow = new ActionRowBuilder().addComponents(openRecensioneButton);
 
             await channel.send({ embeds: [recensioneEmbed], components: [actionRow] });
         }
     });
 
-    // Gestione pulsante per aprire il modulo recensione
     client.on(Events.InteractionCreate, async (interaction) => {
         if (!interaction.isButton()) return;
 
-        // Se l'interazione è il pulsante per aprire la recensione
         if (interaction.customId === 'open_recensione') {
-            const user = interaction.user;
+            const modal = new ModalBuilder().setCustomId('recensione_form').setTitle('Modulo Recensione');
 
-            // Crea il modulo per la recensione
-            const modal = new ModalBuilder()
-                .setCustomId('recensione_form')
-                .setTitle('Modulo Recensione');
-
-            const nomeInput = new TextInputBuilder()
-                .setCustomId('nome')
-                .setLabel('Nome')
-                .setStyle(TextInputStyle.Short)
-                .setRequired(true);
-
-            const recensioneInput = new TextInputBuilder()
-                .setCustomId('recensione')
-                .setLabel('Descrivi la tua esperienza')
-                .setStyle(TextInputStyle.Paragraph)
-                .setRequired(true);
-
-            // Cambiamo la valutazione da un select menu a un input di tipo numerico (0-5)
+            const nomeInput = new TextInputBuilder().setCustomId('nome').setLabel('Nome').setStyle(TextInputStyle.Short).setRequired(true);
+            const recensioneInput = new TextInputBuilder().setCustomId('recensione').setLabel('Descrivi la tua esperienza').setStyle(TextInputStyle.Paragraph).setRequired(true);
             const valutazioneInput = new TextInputBuilder()
                 .setCustomId('valutazione')
                 .setLabel('Valutazione (da 0 a 5)')
@@ -75,7 +59,7 @@ module.exports = (client) => {
                 .setRequired(true)
                 .setMinLength(1)
                 .setMaxLength(1)
-                .setPlaceholder('Inserisci un numero da 0 a 5');
+                .setPlaceholder('Numero da 0 a 5');
 
             modal.addComponents(
                 new ActionRowBuilder().addComponents(nomeInput),
@@ -83,51 +67,42 @@ module.exports = (client) => {
                 new ActionRowBuilder().addComponents(valutazioneInput)
             );
 
-            // Mostra il modulo all'utente
             await interaction.showModal(modal);
         }
     });
 
-    // Gestione risposta modulo recensione
     client.on(Events.InteractionCreate, async (interaction) => {
         if (!interaction.isModalSubmit()) return;
 
         if (interaction.customId === 'recensione_form') {
             const nome = interaction.fields.getTextInputValue('nome');
             const recensione = interaction.fields.getTextInputValue('recensione');
-            const valutazione = interaction.fields.getTextInputValue('valutazione'); // Prendi la valutazione come numero
+            const valutazione = interaction.fields.getTextInputValue('valutazione');
 
-            // Assicurati che la valutazione sia compresa tra 0 e 5
             if (isNaN(valutazione) || valutazione < 0 || valutazione > 5) {
                 return interaction.reply({ content: "❌ La valutazione deve essere un numero tra 0 e 5.", flags: MessageFlags.Ephemeral });
             }
 
             const logChannel = interaction.guild.channels.cache.get(logRecensioneChannelId);
 
-            // Crea l'embed con la valutazione e la recensione
             const recensioneEmbed = new EmbedBuilder()
                 .setTitle("📝 Nuova Recensione")
                 .setColor(0x3498db)
                 .addFields(
                     { name: "👤 Nome", value: nome, inline: true },
-                    { name: "📝 Recensione", value: recensione, inline: false },
+                    { name: "📝 Recensione", value: recensione },
                     { name: "⭐ Valutazione", value: `${'⭐'.repeat(Number(valutazione))}`, inline: true }
                 );
 
-            // Invia la recensione nel canale di log
-            if (logChannel) {
-                await logChannel.send({ embeds: [recensioneEmbed] });
-            }
+            if (logChannel) await logChannel.send({ embeds: [recensioneEmbed] });
 
-            // Invia il messaggio di conferma in privato all'utente
             try {
                 await interaction.user.send("✅ La tua recensione è stata inviata con successo!");
             } catch (error) {
-                console.error("Errore nell'invio del messaggio privato:", error);
+                console.error("Errore nell'invio DM:", error);
             }
 
-            // Risposta nella chat di interazione (ephemeral)
-            await interaction.reply({ content: "✅ La tua recensione è stata inviata con successo!", flags: MessageFlags.Ephemeral });
+            await interaction.reply({ content: "✅ Recensione inviata con successo!", flags: MessageFlags.Ephemeral });
         }
     });
 };

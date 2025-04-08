@@ -1,6 +1,26 @@
 {
+  "name": "sb",
+  "version": "1.0.0",
+  "main": "index.js",
+  "type": "module",  
   "dependencies": {
     "discord.js": "^14.18.0",
     "dotenv": "^16.4.7"
-  }
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Mariodesix/sixbot.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Mariodesix/sixbot/issues"
+  },
+  "homepage": "https://github.com/Mariodesix/sixbot#readme",
+  "description": ""
 }
